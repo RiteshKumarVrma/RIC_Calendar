@@ -21,7 +21,7 @@ export function EventForm({ initialData }: EventFormProps) {
         handleSubmit,
         formState: { errors, isSubmitting },
     } = useForm<EventFormValues>({
-        resolver: zodResolver(eventSchema),
+        resolver: zodResolver(eventSchema) as any,
         defaultValues: initialData ? {
             title: initialData.title,
             description: initialData.description || '',

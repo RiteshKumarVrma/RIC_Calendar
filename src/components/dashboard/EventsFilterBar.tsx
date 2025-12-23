@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select" // Assuming you have a Select component, otherwise native
+
 
 // Separate component for clarity
 export function EventsFilterBar() {

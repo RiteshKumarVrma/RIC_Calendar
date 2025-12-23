@@ -21,6 +21,7 @@ export type Ticket = {
     created_at: string
     events?: Event // Join
     profiles?: Profile // Join
+    guest_count?: number
 }
 
 export interface Event {
