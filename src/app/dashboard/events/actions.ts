@@ -10,7 +10,7 @@ export async function createEvent(formData: FormData) {
     const cookieStore = await cookies()
     const supabase = createClient(cookieStore)
 
-    const rawData = {
+    const rawData: any = {
         title: formData.get('title'),
         description: formData.get('description'),
         event_date: formData.get('event_date'),
@@ -23,9 +23,20 @@ export async function createEvent(formData: FormData) {
         poster_url: formData.get('poster_url') || null,
     }
 
+    // Parse Agenda
+    const agendaJson = formData.get('agenda') as string
+    if (agendaJson) {
+        try {
+            rawData.agenda = JSON.parse(agendaJson)
+        } catch (e) {
+            rawData.agenda = []
+        }
+    }
+
     const result = eventSchema.safeParse(rawData)
 
     if (!result.success) {
+        console.log(result.error)
         return { error: 'Validation failed' }
     }
 
@@ -56,7 +67,7 @@ export async function updateEvent(id: string, formData: FormData) {
     const cookieStore = await cookies()
     const supabase = createClient(cookieStore)
 
-    const rawData = {
+    const rawData: any = {
         title: formData.get('title'),
         description: formData.get('description'),
         event_date: formData.get('event_date'),
@@ -67,6 +78,16 @@ export async function updateEvent(id: string, formData: FormData) {
         organizer: formData.get('organizer'),
         is_published: formData.get('is_published') === 'on',
         poster_url: formData.get('poster_url') || null,
+    }
+
+    // Parse Agenda
+    const agendaJson = formData.get('agenda') as string
+    if (agendaJson) {
+        try {
+            rawData.agenda = JSON.parse(agendaJson)
+        } catch (e) {
+            rawData.agenda = []
+        }
     }
 
     const result = eventSchema.safeParse(rawData)

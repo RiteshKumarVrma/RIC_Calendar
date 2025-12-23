@@ -46,11 +46,12 @@ export function CalendarComponent({ events }: { events: Event[] }) {
 
 function getColor(category: string) {
     switch (category) {
-        case 'Seminar': return '#4F46E5'; // indigo
-        case 'Workshop': return '#10B981'; // green
-        case 'Cultural': return '#EC4899'; // pink
-        case 'Exhibition': return '#F59E0B'; // amber
-        case 'Conference': return '#3B82F6'; // blue
-        default: return '#6B7280'; // gray
+        case 'Theatre Plays': return '#EC4899'; // Pink
+        case 'Dance & Music Events': return '#10B981'; // Green
+        case 'Talks & Seminars': return '#3B82F6'; // Blue
+        case 'Exhibitions': return '#F59E0B'; // Amber
+        case 'Master class / Workshops': return '#8B5CF6'; // Purple
+        case 'Film Festival': return '#06B6D4'; // Cyan
+        default: return '#6B7280'; // Gray
     }
 }
