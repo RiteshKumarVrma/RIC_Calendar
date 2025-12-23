@@ -1,7 +1,21 @@
+'use client'
+
 import { login } from '../actions'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
+import { useEffect, Suspense } from 'react'
+import { toast } from 'sonner'
 
-export default function LoginPage() {
+function LoginForm() {
+    const searchParams = useSearchParams()
+
+    useEffect(() => {
+        const error = searchParams.get('error')
+        if (error) {
+            toast.error(error)
+        }
+    }, [searchParams])
+
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50">
             <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-lg">
@@ -61,5 +75,13 @@ export default function LoginPage() {
                 </p>
             </div>
         </div>
+    )
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <LoginForm />
+        </Suspense>
     )
 }
