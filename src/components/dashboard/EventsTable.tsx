@@ -12,7 +12,7 @@ const categoryColors: Record<string, string> = {
     'Dance & Music Events': 'bg-[#99CC00]',
     'Talks & Seminars': 'bg-[#99CCFF]',
     'Exhibitions': 'bg-[#FFFF99]',
-    'Master class /Lecture / Workshops/Others': 'bg-[#CC99FF]',
+    'Master class /Lecture / Workshops / Others': 'bg-[#CC99FF]',
     'Film Festival': 'bg-[#CCFFFF]',
 }
 

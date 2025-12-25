@@ -150,10 +150,10 @@ export default async function PublicEventDetailPage({ params }: { params: { id: 
 function getCategoryColor(category: string) {
     switch (category) {
         case 'Theatre Plays': return 'bg-pink-100 text-pink-800';
-        case 'Dance & Music Events': return 'bg-green-100 text-green-800';
-        case 'Talks & Seminars': return 'bg-blue-100 text-blue-800';
         case 'Exhibitions': return 'bg-yellow-100 text-yellow-800';
-        case 'Master class / Workshops': return 'bg-purple-100 text-purple-800';
+        case 'Dance & Music Events': return 'bg-green-100 text-green-800';
+        case 'Master class/ lecture / Workshops/Others': return 'bg-purple-100 text-purple-800';
+        case 'Talks & Seminars': return 'bg-blue-100 text-blue-800';
         case 'Film Festival': return 'bg-cyan-100 text-cyan-800';
         default: return 'bg-gray-100 text-gray-800';
     }

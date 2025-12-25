@@ -9,7 +9,9 @@ import {
     MessageSquare,
     CreditCard,
     AlertCircle,
-    LayoutDashboard
+    LayoutDashboard,
+    Package,
+    Globe
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { logout } from '@/app/auth/actions'
@@ -17,11 +19,13 @@ import { logout } from '@/app/auth/actions'
 const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Events', href: '/dashboard/events', icon: Calendar },
+    { name: 'Public Events', href: '/events', icon: Globe, disabled: false },
     { name: 'Tickets', href: '/dashboard/tickets', icon: Ticket, disabled: false },
+    { name: 'Items', href: '/dashboard/items', icon: Package, disabled: false },
     { name: 'Vendors', href: '/dashboard/vendors', icon: Users, disabled: true },
     { name: 'Staff Management', href: '/dashboard/staff', icon: Users, disabled: false },
     { name: 'Subscription Plan', href: '/dashboard/subscription', icon: CreditCard, disabled: true },
-    { name: 'Message', href: '/dashboard/messages', icon: MessageSquare, disabled: true },
+    { name: 'Message', href: '/dashboard/messages', icon: MessageSquare, disabled: false },
     { name: 'Finance', href: '/dashboard/finance', icon: CreditCard, disabled: true },
     { name: 'Dispute', href: '/dashboard/dispute', icon: AlertCircle, disabled: true },
 ]
