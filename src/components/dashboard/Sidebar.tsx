@@ -12,7 +12,9 @@ import {
     LayoutDashboard,
     Package,
     Globe,
-    Megaphone
+    Megaphone,
+    Mail,
+    MessageCircle
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { logout } from '@/app/auth/actions'
@@ -25,7 +27,9 @@ const navigation = [
     { name: 'Items', href: '/dashboard/items', icon: Package, disabled: false },
     { name: 'Vendors', href: '/dashboard/vendors', icon: Users, disabled: true },
     { name: 'Staff Management', href: '/dashboard/staff', icon: Users, disabled: false },
-    { name: 'Broadcasts', href: '/dashboard/broadcasts', icon: Megaphone, disabled: false },
+    // { name: 'Broadcasts', href: '/dashboard/broadcasts', icon: Megaphone, disabled: false },
+    { name: 'Email Marketing', href: '/dashboard/email', icon: Mail, disabled: false },
+    { name: 'WhatsApp Marketing', href: '/dashboard/whatsapp', icon: MessageCircle, disabled: false },
     { name: 'Subscription Plan', href: '/dashboard/subscription', icon: CreditCard, disabled: true },
     { name: 'Message', href: '/dashboard/messages', icon: MessageSquare, disabled: false },
     { name: 'Finance', href: '/dashboard/finance', icon: CreditCard, disabled: true },

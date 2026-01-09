@@ -9,7 +9,7 @@ import { createCampaign } from '@/app/dashboard/actions/broadcasts'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 
-export default function CreateCampaignForm({ templates }: { templates: any[] }) {
+export default function CreateCampaignForm({ templates, fixedType }: { templates: any[], fixedType?: 'email' | 'whatsapp' }) {
     const router = useRouter()
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
@@ -17,7 +17,7 @@ export default function CreateCampaignForm({ templates }: { templates: any[] }) 
     // Step 1: Basics
     const [formData, setFormData] = useState({
         name: '',
-        type: 'email',
+        type: fixedType || 'email',
         template_id: '',
         filter_tags: '',
         scheduled_at: ''
@@ -40,19 +40,23 @@ export default function CreateCampaignForm({ templates }: { templates: any[] }) 
             setLoading(false)
         } else {
             // Success
-            router.push('/dashboard/broadcasts/campaigns')
+            if (fixedType) {
+                router.push(`/dashboard/${fixedType}`)
+            } else {
+                router.push('/dashboard/broadcasts/campaigns')
+            }
             router.refresh()
         }
     }
 
     return (
         <div className="max-w-2xl mx-auto py-8">
-            <Link href="/dashboard/broadcasts/campaigns" className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 mb-6">
+            <Link href={fixedType ? `/dashboard/${fixedType}` : "/dashboard/broadcasts/campaigns"} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 mb-6">
                 <ArrowLeft className="h-4 w-4" /> Back to Campaigns
             </Link>
 
             <div className="bg-white p-8 rounded-lg shadow border border-gray-200">
-                <h1 className="text-xl font-bold mb-6">Create New Campaign</h1>
+                <h1 className="text-xl font-bold mb-6">Create New {fixedType ? (fixedType === 'email' ? 'Email' : 'WhatsApp') : ''} Campaign</h1>
 
                 {error && (
                     <div className="bg-red-50 text-red-600 p-4 rounded mb-6 text-sm">
@@ -72,17 +76,19 @@ export default function CreateCampaignForm({ templates }: { templates: any[] }) 
                     </div>
 
                     <div className="grid grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <Label>Channel</Label>
-                            <select
-                                className="w-full h-10 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                value={formData.type}
-                                onChange={e => setFormData({ ...formData, type: e.target.value, template_id: '' })}
-                            >
-                                <option value="email">Email</option>
-                                <option value="whatsapp">WhatsApp</option>
-                            </select>
-                        </div>
+                        {!fixedType && (
+                            <div className="space-y-2">
+                                <Label>Channel</Label>
+                                <select
+                                    className="w-full h-10 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    value={formData.type}
+                                    onChange={e => setFormData({ ...formData, type: e.target.value, template_id: '' })}
+                                >
+                                    <option value="email">Email</option>
+                                    <option value="whatsapp">WhatsApp</option>
+                                </select>
+                            </div>
+                        )}
 
                         <div className="space-y-2">
                             <Label>Select Template</Label>

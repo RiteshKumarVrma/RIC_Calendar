@@ -16,7 +16,7 @@
 # next.js
 /.next/
 /out/
-
+/mcp-server/node_modules
 # production
 /build
 

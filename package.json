@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "email-worker": "cd mcp-server && npm run dev"
   },
   "dependencies": {
     "@fullcalendar/daygrid": "^6.1.19",

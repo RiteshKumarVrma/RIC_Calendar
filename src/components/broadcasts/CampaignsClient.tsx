@@ -5,13 +5,18 @@ import Link from 'next/link'
 import { Plus, Play, Pause, AlertCircle, CheckCircle, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 
-export default function CampaignsClient({ initialCampaigns }: { initialCampaigns: any[] }) {
+export default function CampaignsClient({ initialCampaigns, type }: { initialCampaigns: any[], type?: 'email' | 'whatsapp' }) {
+
+    // Determine the base path for creating new campaigns
+    const createLink = type
+        ? `/dashboard/${type}/create`
+        : '/dashboard/broadcasts/campaigns/create'
 
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h2 className="text-xl font-semibold">Campaigns</h2>
-                <Link href="/dashboard/broadcasts/campaigns/create">
+                <Link href={createLink}>
                     <Button className="flex items-center gap-2 bg-indigo-600 text-white">
                         <Plus className="h-4 w-4" /> New Campaign
                     </Button>
@@ -32,9 +37,9 @@ export default function CampaignsClient({ initialCampaigns }: { initialCampaigns
                                         <div className="flex items-center gap-2">
                                             <p className="truncate text-sm font-medium text-indigo-600">{campaign.name}</p>
                                             <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${campaign.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                                    campaign.status === 'processing' ? 'bg-blue-100 text-blue-800' :
-                                                        campaign.status === 'failed' ? 'bg-red-100 text-red-800' :
-                                                            'bg-gray-100 text-gray-800'
+                                                campaign.status === 'processing' ? 'bg-blue-100 text-blue-800' :
+                                                    campaign.status === 'failed' ? 'bg-red-100 text-red-800' :
+                                                        'bg-gray-100 text-gray-800'
                                                 }`}>
                                                 {campaign.status}
                                             </span>

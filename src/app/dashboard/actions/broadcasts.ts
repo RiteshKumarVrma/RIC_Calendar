@@ -99,6 +99,31 @@ export async function bulkImportContacts(contacts: any[]) {
     return { success: true }
 }
 
+export async function startSimpleCampaign(emails: string[], subject: string, body: string) {
+    const cookieStore = await cookies()
+    const supabase = createClient(cookieStore)
+
+    // 1. Insert
+    // We will duplicate subject/body for each row. efficient? no. Simple? Yes. 
+    // Ideally we use a parent table, but let's stick to the "Simple Emails" table structure request.
+    const rows = emails.map(e => ({
+        email: e,
+        status: 'pending',
+        subject: subject,
+        body: body // We need to add these columns!
+    }))
+
+    if (rows.length > 0) {
+        const { error } = await supabase.from('simple_emails').insert(rows)
+        if (error) {
+            console.error('Error starting simple campaign:', error)
+            return { error: error.message }
+        }
+    }
+
+    return { success: true }
+}
+
 // TEMPLATES
 const TemplateSchema = z.object({
     name: z.string().min(1),
@@ -179,16 +204,24 @@ const CampaignSchema = z.object({
     template_id: z.string().min(1),
     scheduled_at: z.string().optional(), // ISO string or empty
     filter_tags: z.string().optional(),
+    audience_source: z.string().optional(),
+    manual_emails: z.string().optional(),
 })
 
-export async function getCampaigns() {
+export async function getCampaigns(type?: 'email' | 'whatsapp') {
     const cookieStore = await cookies()
     const supabase = createClient(cookieStore)
 
-    const { data, error } = await supabase
+    let query = supabase
         .from('campaigns')
         .select('*, message_templates(name)')
         .order('created_at', { ascending: false })
+
+    if (type) {
+        query = query.eq('type', type)
+    }
+
+    const { data, error } = await query
 
     if (error) {
         console.error('Error fetching campaigns:', error)
@@ -207,6 +240,8 @@ export async function createCampaign(formData: FormData) {
         template_id: formData.get('template_id'),
         scheduled_at: formData.get('scheduled_at'),
         filter_tags: formData.get('filter_tags'),
+        audience_source: formData.get('audience_source'),
+        manual_emails: formData.get('manual_emails'),
     }
 
     const validated = CampaignSchema.safeParse(rawData)
@@ -215,7 +250,7 @@ export async function createCampaign(formData: FormData) {
         return { error: 'Invalid campaign data' }
     }
 
-    const { name, type, template_id, scheduled_at, filter_tags } = validated.data
+    const { name, type, template_id, scheduled_at, filter_tags, audience_source, manual_emails } = validated.data
 
     const tagsArray = filter_tags ? filter_tags.split(',').map(t => t.trim()).filter(Boolean) : []
 
@@ -225,7 +260,7 @@ export async function createCampaign(formData: FormData) {
         type,
         template_id,
         scheduled_at: scheduled_at || null,
-        status: 'draft', // User will have to "Launch" it, or we auto-launch if scheduled? Let's say we create as draft first or 'scheduled' if date is present.
+        status: 'draft',
         filter_tags: tagsArray
     }).select().single()
 
@@ -234,29 +269,72 @@ export async function createCampaign(formData: FormData) {
     }
 
     // 2. Generate Campaign Messages (Queue)
-    // Find contacts matching tags
-    let query = supabase.from('contacts').select('id').eq('is_subscribed', true)
+    let finalContactIds: string[] = []
 
-    if (tagsArray.length > 0) {
-        query = query.overlaps('tags', tagsArray)
+    if (audience_source === 'manual' && manual_emails) {
+        // Handle Manual Emails
+        const emailList = manual_emails.split(/[\n,]+/)
+            .map(e => e.trim())
+            .filter(e => e.includes('@') && e.length > 3)
+
+        const uniqueEmails = [...new Set(emailList)]
+
+        if (uniqueEmails.length === 0) {
+            return { success: true, warning: 'No valid emails in manual list' }
+        }
+
+        // Upsert Contacs
+        const contactsToUpsert = uniqueEmails.map(email => ({
+            email,
+            name: email.split('@')[0], // Fallback name
+            tags: ['manual-import', `campaign-${campaign.id}`],
+            is_subscribed: true
+        }))
+
+        // We can't easily return IDs from upsert in Supabase JS in one go if onConflict is needed heavily
+        // A simple loop or ignoreDuplicates might work.
+        // Let's use upsert with onConflict email.
+
+        const { data: upsertedContacts, error: upsertError } = await supabase
+            .from('contacts')
+            .upsert(contactsToUpsert, { onConflict: 'email', ignoreDuplicates: false })
+            .select('id')
+
+        if (upsertError) {
+            console.error('Upsert contacts error:', upsertError)
+            // Fallback: try to fetch existing by email
+        }
+
+        // Fetch IDs again to be sure (since upsert might not return all if not modified? actually it should with select)
+        const { data: fetchedContacts } = await supabase.from('contacts').select('id').in('email', uniqueEmails)
+        if (fetchedContacts) {
+            finalContactIds = fetchedContacts.map(c => c.id)
+        }
+
+    } else {
+        // Handle Database Query
+        let query = supabase.from('contacts').select('id').eq('is_subscribed', true)
+        if (tagsArray.length > 0) {
+            query = query.overlaps('tags', tagsArray)
+        }
+        const { data: contacts, error: contactsError } = await query
+
+        if (contactsError) {
+            return { error: 'Error fetching contacts for campaign' }
+        }
+        if (contacts) {
+            finalContactIds = contacts.map(c => c.id)
+        }
     }
 
-    const { data: contacts, error: contactsError } = await query
-
-    if (contactsError) {
-        return { error: 'Error fetching contacts for campaign' }
-    }
-
-    if (!contacts || contacts.length === 0) {
-        // No contacts found, but campaign created. 
-        // We might want to warn user but for now just return success.
-        return { success: true, warning: 'No contacts matched filters' }
+    if (finalContactIds.length === 0) {
+        return { success: true, warning: 'No contacts matched filters or import failed' }
     }
 
     // Insert messages
-    const messages = contacts.map(c => ({
+    const messages = finalContactIds.map(cid => ({
         campaign_id: campaign.id,
-        contact_id: c.id,
+        contact_id: cid,
         status: 'pending'
     }))
 
@@ -266,39 +344,55 @@ export async function createCampaign(formData: FormData) {
         const { error } = await supabase.from('campaign_messages').insert(messages.slice(i, i + chunkSize))
         if (error) {
             console.error('Error creating campaign messages:', error)
-            // Should probably rollback campaign? But let's keep it simple.
         }
     }
 
     // Update status from draft to scheduled/processing
     await supabase.from('campaigns').update({
         status: scheduled_at ? 'scheduled' : 'processing',
-        stats: { total: contacts.length, sent: 0, failed: 0, pending: contacts.length }
+        stats: { total: finalContactIds.length, sent: 0, failed: 0, pending: finalContactIds.length }
     }).eq('id', campaign.id)
 
 
-    revalidatePath('/dashboard/broadcasts/campaigns')
+    revalidatePath('/dashboard/email')
+    revalidatePath('/dashboard/whatsapp')
     return { success: true }
 }
 
-export async function getOverviewStats() {
+export async function getOverviewStats(type?: 'email' | 'whatsapp') {
     const cookieStore = await cookies()
     const supabase = createClient(cookieStore)
 
     const { count: contactsCount } = await supabase.from('contacts').select('*', { count: 'exact', head: true })
-    const { count: campaignsCount } = await supabase.from('campaigns').select('*', { count: 'exact', head: true })
 
-    // For sent messages, we might want to query campaign_messages
-    const { count: emailsSent } = await supabase.from('campaign_messages').select('*', { count: 'exact', head: true })
-        .eq('status', 'sent')
-    // This is rough approximation as we don't store type on message directly but on campaign. 
-    // For strict accuracy we need a join or store type on message. 
-    // For efficiency, let's just count all sent for now or do a join if not expansive.
+    let campaignsQuery = supabase.from('campaigns').select('*', { count: 'exact', head: true })
+    if (type) {
+        campaignsQuery = campaignsQuery.eq('type', type)
+    }
+    const { count: campaignsCount } = await campaignsQuery
 
-    // Let's do a simple count of all sent for now, or split by type
-    // Optimisation: store aggregates in a separate stats table or cache.
-    // Here we will just return total Sent messages.
-    const { count: messagesSent } = await supabase.from('campaign_messages').select('*', { count: 'exact', head: true }).eq('status', 'sent')
+    // For sent messages, this is harder as messages are linked to campaigns
+    // We would need to join campaign_messages with campaigns table and filter by type
+    // OR we can just sum the 'stats->sent' from campaigns table?
+    // Let's rely on campaigns stats for faster query if possible, or do a join
+
+    // Simple join approach (might be slow if millions)
+    let messagesSent = 0
+    if (type) {
+        // Get all campaign IDs of that type
+        const { data: campaigns } = await supabase.from('campaigns').select('id').eq('type', type)
+        if (campaigns && campaigns.length > 0) {
+            const ids = campaigns.map(c => c.id)
+            const { count } = await supabase.from('campaign_messages')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'sent')
+                .in('campaign_id', ids) // Limit this?
+            messagesSent = count || 0
+        }
+    } else {
+        const { count } = await supabase.from('campaign_messages').select('*', { count: 'exact', head: true }).eq('status', 'sent')
+        messagesSent = count || 0
+    }
 
     return {
         contacts: contactsCount || 0,
